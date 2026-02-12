@@ -6,24 +6,28 @@ export function evaluateHand(
 ): HandResult {
 	const allCards = [...communityCards, ...holeCards];
 
-	// 1. Count rank frequencies
 	const rankCounts = new Map<Rank, number>();
 	for (const card of allCards) {
 		rankCounts.set(card.rank, (rankCounts.get(card.rank) || 0) + 1);
 	}
 
-	// 2. Analyze the counts
 	let pairCount = 0;
+	let threeOfAKindCount = 0; // New tracker
 
 	for (const count of rankCounts.values()) {
+		if (count === 3) {
+			threeOfAKindCount++;
+		}
 		if (count === 2) {
 			pairCount++;
 		}
 	}
 
-	// 3. Determine Category (Priority Order)
-	// Note: With 7 cards, you might have 3 pairs (e.g., AA, KK, QQ, 2).
-	// The best hand is still "Two Pair" (AA KK Q). So we check >= 2.
+	// Priority Check: Highest Category First
+	if (threeOfAKindCount > 0) {
+		return { category: HandCategory.ThreeOfAKind };
+	}
+
 	if (pairCount >= 2) {
 		return { category: HandCategory.TwoPair };
 	}

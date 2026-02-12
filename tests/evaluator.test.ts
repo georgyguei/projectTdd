@@ -58,4 +58,22 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.TwoPair);
 	});
+	it("should identify a Three of a Kind hand", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Queen, suit: Suit.Clubs },
+			{ rank: Rank.Queen, suit: Suit.Diamonds },
+		];
+
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Queen, suit: Suit.Hearts }, // Trip Queens
+			{ rank: Rank.Two, suit: Suit.Spades },
+			{ rank: Rank.Five, suit: Suit.Clubs },
+			{ rank: Rank.Seven, suit: Suit.Diamonds },
+			{ rank: Rank.Nine, suit: Suit.Hearts },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.category).toBe(HandCategory.ThreeOfAKind);
+	});
 });
