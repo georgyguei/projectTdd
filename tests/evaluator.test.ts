@@ -22,4 +22,22 @@ describe('Texas Holdem Evaluator', () => {
 
     expect(result.category).toBe(HandCategory.HighCard);
   });
+  it('should identify a One Pair hand', () => {
+    const holeCards: [Card, Card] = [
+        { rank: Rank.Ten, suit: Suit.Clubs }, 
+        { rank: Rank.Eight, suit: Suit.Diamonds }
+    ];
+
+    const communityCards: [Card, Card, Card, Card, Card] = [
+        { rank: Rank.Ten, suit: Suit.Hearts }, // Matches hole card Ten (Pair)
+        { rank: Rank.Two, suit: Suit.Spades },
+        { rank: Rank.Five, suit: Suit.Clubs },
+        { rank: Rank.King, suit: Suit.Diamonds },
+        { rank: Rank.Queen, suit: Suit.Hearts } 
+    ];
+
+    const result = evaluateHand(communityCards, holeCards);
+
+    expect(result.category).toBe(HandCategory.OnePair);
+});
 });
