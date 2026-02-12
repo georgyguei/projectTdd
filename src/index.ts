@@ -4,7 +4,7 @@ import {
 	type HandResult,
 	type Rank,
 	type Suit,
-} from "./types"; // Import Suit
+} from "./types";
 
 export function evaluateHand(
 	communityCards: Card[],
@@ -12,26 +12,40 @@ export function evaluateHand(
 ): HandResult {
 	const allCards = [...communityCards, ...holeCards];
 
-	// Strategy 1: Rank Counts (for Pairs, Trips, Quads, Full House)
 	const rankCounts = new Map<Rank, number>();
+	const suitCounts = new Map<Suit, number>();
+
+	// Strategy 1 & 2: Frequency Maps
 	for (const card of allCards) {
 		rankCounts.set(card.rank, (rankCounts.get(card.rank) || 0) + 1);
-	}
-
-	// Strategy 2: Suit Counts (for Flush)
-	const suitCounts = new Map<Suit, number>();
-	for (const card of allCards) {
 		suitCounts.set(card.suit, (suitCounts.get(card.suit) || 0) + 1);
 	}
 
-	// ----------------------------------------------------
-	// Analysis
-	// ----------------------------------------------------
+	// Strategy 3: Check for Straight
+	// Get all unique ranks, sort them ascending
+	const uniqueRanks = Array.from(rankCounts.keys()).sort((a, b) => a - b);
+	let isStraight = false;
 
-	// Analyze Ranks
+	// Check for 5 consecutive ranks
+	let consecutiveCount = 1;
+	for (let i = 0; i < uniqueRanks.length - 1; i++) {
+		if (uniqueRanks[i + 1] === uniqueRanks[i] + 1) {
+			consecutiveCount++;
+			if (consecutiveCount >= 5) {
+				isStraight = true;
+			}
+		} else {
+			consecutiveCount = 1;
+		}
+	}
+
+	// ----------------------------------------------------
+	// Analysis & Decision
+	// ----------------------------------------------------
 	let pairCount = 0;
 	let threeOfAKindCount = 0;
 	let fourOfAKindCount = 0;
+	let isFlush = false;
 
 	for (const count of rankCounts.values()) {
 		if (count === 4) fourOfAKindCount++;
@@ -39,48 +53,26 @@ export function evaluateHand(
 		if (count === 2) pairCount++;
 	}
 
-	// Analyze Suits
-	let isFlush = false;
 	for (const count of suitCounts.values()) {
-		if (count >= 5) {
-			isFlush = true;
-			break;
-		}
+		if (count >= 5) isFlush = true;
 	}
 
-	// ----------------------------------------------------
-	// Decision Tree (Order matters!)
-	// ----------------------------------------------------
+	// Decision Tree (Highest to Lowest)
 
-	// 1. Four of a Kind
-	if (fourOfAKindCount > 0) {
-		return { category: HandCategory.FourOfAKind };
-	}
+	// 1. Straight Flush (Wait! We haven't tested this yet, but it beats Quads)
+	// We will implement Straight Flush logic in the next step.
 
-	// 2. Full House
-	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1)) {
+	if (fourOfAKindCount > 0) return { category: HandCategory.FourOfAKind };
+	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1))
 		return { category: HandCategory.FullHouse };
-	}
+	if (isFlush) return { category: HandCategory.Flush };
 
-	// 3. Flush (Beats Straight, Trips, etc.)
-	if (isFlush) {
-		return { category: HandCategory.Flush };
-	}
+	// 4. Straight (Beats Three of a Kind)
+	if (isStraight) return { category: HandCategory.Straight };
 
-	// 4. Three of a Kind
-	if (threeOfAKindCount > 0) {
-		return { category: HandCategory.ThreeOfAKind };
-	}
-
-	// 5. Two Pair
-	if (pairCount >= 2) {
-		return { category: HandCategory.TwoPair };
-	}
-
-	// 6. One Pair
-	if (pairCount === 1) {
-		return { category: HandCategory.OnePair };
-	}
+	if (threeOfAKindCount > 0) return { category: HandCategory.ThreeOfAKind };
+	if (pairCount >= 2) return { category: HandCategory.TwoPair };
+	if (pairCount === 1) return { category: HandCategory.OnePair };
 
 	return { category: HandCategory.HighCard };
 }
