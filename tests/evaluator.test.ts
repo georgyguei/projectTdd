@@ -112,4 +112,22 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.FourOfAKind);
 	});
+	it("should identify a Flush hand", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Two, suit: Suit.Hearts },
+			{ rank: Rank.Four, suit: Suit.Hearts },
+		];
+
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Nine, suit: Suit.Hearts },
+			{ rank: Rank.King, suit: Suit.Hearts },
+			{ rank: Rank.Ace, suit: Suit.Hearts }, // 5 Hearts total
+			{ rank: Rank.Ten, suit: Suit.Spades },
+			{ rank: Rank.Three, suit: Suit.Diamonds },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.category).toBe(HandCategory.Flush);
+	});
 });
