@@ -24,27 +24,20 @@ export function resolveWinners(
 	board: Card[],
 	players: Player[],
 ): PlayerResult[] {
-	// 1. Evaluate everyone
 	const results: PlayerResult[] = players.map((p) => ({
 		id: p.id,
 		hand: evaluateHand(board, p.hole),
 	}));
 
-	// 2. Find the best hand among all players
 	let winners: PlayerResult[] = [results[0]];
-
 	for (let i = 1; i < results.length; i++) {
 		const comparison = compareHands(results[i].hand, winners[0].hand);
-
 		if (comparison === 1) {
-			// We found a new absolute leader
 			winners = [results[i]];
 		} else if (comparison === 0) {
-			// It's a tie with the current leaders
 			winners.push(results[i]);
 		}
 	}
-
 	return winners;
 }
 
@@ -89,7 +82,6 @@ export function evaluateHand(
 	const pairs = getRanksByFreq(2);
 	const _singles = getRanksByFreq(1);
 
-	// Helpers for picking physical cards
 	const pick = (rank: Rank, count: number) =>
 		allCards.filter((c) => c.rank === rank).slice(0, count);
 	const remaining = (exclude: Card[], count: number) =>
@@ -113,25 +105,25 @@ export function evaluateHand(
 				];
 				return {
 					high: uniqueRanks[i],
-					cards: ranks.map((r) => cards.find((c) => c.rank === r) as Card),
+					cards: ranks.map((r) => cards.find((c) => c.rank === r)!),
 				};
 			}
 		}
-		const wheel = [Rank.Ace, Rank.Five, Rank.Four, Rank.Three, Rank.Two];
+		const wheel = [Rank.Five, Rank.Four, Rank.Three, Rank.Two, Rank.Ace];
 		if (wheel.every((r) => cards.some((c) => c.rank === r))) {
 			return {
 				high: Rank.Five,
-				cards: wheel.map((r) => cards.find((c) => c.rank === r) as Card),
+				cards: wheel.map((r) => cards.find((c) => c.rank === r)!),
 			};
 		}
 		return null;
 	};
 
-	// 1. Straight Flush
 	let flushSuit: Suit | null = null;
 	for (const [s, count] of suitCounts) {
 		if (count >= 5) flushSuit = s;
 	}
+
 	if (flushSuit) {
 		const fCards = allCards.filter((c) => c.suit === flushSuit);
 		const sf = getStraightInfo(fCards);
@@ -143,7 +135,6 @@ export function evaluateHand(
 			};
 	}
 
-	// 2. Four of a Kind
 	if (quads.length > 0) {
 		const c4 = pick(quads[0], 4);
 		const kicker = remaining(c4, 1);
@@ -154,7 +145,6 @@ export function evaluateHand(
 		};
 	}
 
-	// 3. Full House
 	if ((trips.length >= 1 && pairs.length >= 1) || trips.length >= 2) {
 		const tRank = trips[0],
 			pRank = trips[1] ?? pairs[0];
@@ -167,7 +157,6 @@ export function evaluateHand(
 		};
 	}
 
-	// 4. Flush
 	if (flushSuit) {
 		const fCards = allCards
 			.filter((c) => c.suit === flushSuit)
@@ -180,7 +169,6 @@ export function evaluateHand(
 		};
 	}
 
-	// 5. Straight
 	const st = getStraightInfo(allCards);
 	if (st)
 		return {
@@ -189,7 +177,6 @@ export function evaluateHand(
 			chosen5: st.cards,
 		};
 
-	// 6. Three of a Kind
 	if (trips.length > 0) {
 		const c3 = pick(trips[0], 3);
 		const kickers = remaining(c3, 2);
@@ -200,7 +187,6 @@ export function evaluateHand(
 		};
 	}
 
-	// 7. Two Pair
 	if (pairs.length >= 2) {
 		const cP1 = pick(pairs[0], 2),
 			cP2 = pick(pairs[1], 2);
@@ -212,7 +198,6 @@ export function evaluateHand(
 		};
 	}
 
-	// 8. One Pair
 	if (pairs.length === 1) {
 		const cP = pick(pairs[0], 2);
 		const kickers = remaining(cP, 3);
@@ -223,7 +208,6 @@ export function evaluateHand(
 		};
 	}
 
-	// 9. High Card
 	const best5 = [...allCards].sort((a, b) => b.rank - a.rank).slice(0, 5);
 	return {
 		category: HandCategory.HighCard,
