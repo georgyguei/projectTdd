@@ -19,6 +19,8 @@ const CATEGORY_RANKINGS: Record<HandCategory, number> = {
 	[HandCategory.HighCard]: 1,
 };
 
+// src/index.ts
+
 export function compareHands(hand1: HandResult, hand2: HandResult): number {
 	const rank1 = CATEGORY_RANKINGS[hand1.category];
 	const rank2 = CATEGORY_RANKINGS[hand2.category];
@@ -26,9 +28,18 @@ export function compareHands(hand1: HandResult, hand2: HandResult): number {
 	if (rank1 > rank2) return 1;
 	if (rank1 < rank2) return -1;
 
-	// For now, if categories are equal, return 0 (Tie).
-	// We will implement tie-breakers (kickers) in the next step.
-	return 0;
+	// Categories are equal, compare rankingValues element by element
+	//
+	const len = Math.max(hand1.rankingValues.length, hand2.rankingValues.length);
+	for (let i = 0; i < len; i++) {
+		const val1 = hand1.rankingValues[i] || 0;
+		const val2 = hand2.rankingValues[i] || 0;
+
+		if (val1 > val2) return 1;
+		if (val1 < val2) return -1;
+	}
+
+	return 0; // Absolute tie [cite: 14]
 }
 
 export function evaluateHand(
@@ -113,15 +124,20 @@ export function evaluateHand(
 	// Decision Tree
 	// ----------------------------------------------------
 
-	if (isStraightFlush) return { category: HandCategory.StraightFlush };
-	if (fourOfAKindCount > 0) return { category: HandCategory.FourOfAKind };
+	if (isStraightFlush)
+		return { category: HandCategory.StraightFlush, rankingValues: [] };
+	if (fourOfAKindCount > 0)
+		return { category: HandCategory.FourOfAKind, rankingValues: [] };
 	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1))
-		return { category: HandCategory.FullHouse };
-	if (isFlush) return { category: HandCategory.Flush };
-	if (isStraight) return { category: HandCategory.Straight };
-	if (threeOfAKindCount > 0) return { category: HandCategory.ThreeOfAKind };
-	if (pairCount >= 2) return { category: HandCategory.TwoPair };
-	if (pairCount === 1) return { category: HandCategory.OnePair };
+		return { category: HandCategory.FullHouse, rankingValues: [] };
+	if (isFlush) return { category: HandCategory.Flush, rankingValues: [] };
+	if (isStraight) return { category: HandCategory.Straight, rankingValues: [] };
+	if (threeOfAKindCount > 0)
+		return { category: HandCategory.ThreeOfAKind, rankingValues: [] };
+	if (pairCount >= 2)
+		return { category: HandCategory.TwoPair, rankingValues: [] };
+	if (pairCount === 1)
+		return { category: HandCategory.OnePair, rankingValues: [] };
 
-	return { category: HandCategory.HighCard };
+	return { category: HandCategory.HighCard, rankingValues: [] };
 }

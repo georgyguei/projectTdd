@@ -40,5 +40,5 @@ export interface Card {
 
 export interface HandResult {
 	category: HandCategory;
-	// We will add the "winning cards" field later when we tackle that requirement
+	rankingValues: Rank[];
 }
