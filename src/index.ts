@@ -6,7 +6,7 @@ import {
 	type Suit,
 } from "./types";
 
-// Numeric weights for category comparison (Higher is better)
+// Numeric weights for category comparison (Higher is better) [cite: 11, 12]
 const CATEGORY_RANKINGS: Record<HandCategory, number> = {
 	[HandCategory.StraightFlush]: 9,
 	[HandCategory.FourOfAKind]: 8,
@@ -19,8 +19,12 @@ const CATEGORY_RANKINGS: Record<HandCategory, number> = {
 	[HandCategory.HighCard]: 1,
 };
 
-// src/index.ts
-
+/**
+ * Compares two hands and returns:
+ * 1 if hand1 wins
+ * -1 if hand2 wins
+ * 0 if they tie
+ */
 export function compareHands(hand1: HandResult, hand2: HandResult): number {
 	const rank1 = CATEGORY_RANKINGS[hand1.category];
 	const rank2 = CATEGORY_RANKINGS[hand2.category];
@@ -28,8 +32,7 @@ export function compareHands(hand1: HandResult, hand2: HandResult): number {
 	if (rank1 > rank2) return 1;
 	if (rank1 < rank2) return -1;
 
-	// Categories are equal, compare rankingValues element by element
-	//
+	// If categories are equal, compare rankingValues element by element [cite: 13, 20, 25]
 	const len = Math.max(hand1.rankingValues.length, hand2.rankingValues.length);
 	for (let i = 0; i < len; i++) {
 		const val1 = hand1.rankingValues[i] || 0;
@@ -42,13 +45,16 @@ export function compareHands(hand1: HandResult, hand2: HandResult): number {
 	return 0; // Absolute tie [cite: 14]
 }
 
+/**
+ * Determines the best category and tie-break values for a 7-card hand.
+ */
 export function evaluateHand(
 	communityCards: Card[],
 	holeCards: Card[],
 ): HandResult {
 	const allCards = [...communityCards, ...holeCards];
 
-	// Strategy 1 & 2: Frequency Maps
+	// Strategy 1 & 2: Frequency Maps for Ranks and Suits [cite: 20]
 	const rankCounts = new Map<Rank, number>();
 	const suitCounts = new Map<Suit, number>();
 
@@ -57,87 +63,141 @@ export function evaluateHand(
 		suitCounts.set(card.suit, (suitCounts.get(card.suit) || 0) + 1);
 	}
 
-	// ----------------------------------------------------
-	// Helper: Straight Detector
-	// ----------------------------------------------------
-	const checkStraight = (ranks: Rank[]): boolean => {
-		let uniqueRanks = Array.from(new Set(ranks)).sort((a, b) => a - b);
-
-		// Handle Ace Low (Wheel)
-		if (uniqueRanks.includes(Rank.Ace)) {
-			uniqueRanks = [1 as Rank, ...uniqueRanks];
-		}
-
-		let consecutiveCount = 1;
-		for (let i = 0; i < uniqueRanks.length - 1; i++) {
-			if (uniqueRanks[i + 1] === uniqueRanks[i] + 1) {
-				consecutiveCount++;
-				if (consecutiveCount >= 5) return true;
-			} else {
-				consecutiveCount = 1;
-			}
-		}
-		return false;
+	// Helper: Get Ranks sorted by their frequency and then by rank value [cite: 22, 23, 24]
+	const getRanksByFrequency = (freq: number): Rank[] => {
+		return Array.from(rankCounts.entries())
+			.filter(([_, count]) => count === freq)
+			.map(([rank, _]) => rank)
+			.sort((a, b) => b - a);
 	};
 
-	// ----------------------------------------------------
-	// Analysis
-	// ----------------------------------------------------
+	const quads = getRanksByFrequency(4);
+	const trips = getRanksByFrequency(3);
+	const pairs = getRanksByFrequency(2);
+	const singles = getRanksByFrequency(1);
 
-	// 1. Check for basic Straight
+	// Strategy 3: Straight Detection
 	const allRanks = allCards.map((c) => c.rank);
-	const isStraight = checkStraight(allRanks);
 
-	// 2. Check for Flush & Straight Flush
-	let isFlush = false;
-	let isStraightFlush = false;
+	const getStraightHighRank = (ranks: Rank[]): number | null => {
+		const unique = Array.from(new Set(ranks)).sort((a, b) => b - a);
+
+		// Check standard straights
+		for (let i = 0; i <= unique.length - 5; i++) {
+			if (unique[i] - unique[i + 4] === 4) return unique[i];
+		}
+
+		// Check "Wheel" (5-4-3-2-A) [cite: 16]
+		const wheelRanks = [Rank.Ace, Rank.Five, Rank.Four, Rank.Three, Rank.Two];
+		if (wheelRanks.every((r) => ranks.includes(r))) return Rank.Five;
+
+		return null;
+	};
+
+	const straightHighCard = getStraightHighRank(allRanks);
+
+	// Strategy 4: Flush Detection [cite: 20]
 	let flushSuit: Suit | null = null;
-
 	for (const [suit, count] of suitCounts.entries()) {
 		if (count >= 5) {
-			isFlush = true;
 			flushSuit = suit;
 			break;
 		}
 	}
 
-	if (isFlush && flushSuit) {
+	// --- Decision Tree (Highest Priority First) --- [cite: 12]
+
+	// 1. Straight Flush [cite: 15]
+	if (flushSuit) {
 		const flushCards = allCards.filter((c) => c.suit === flushSuit);
 		const flushRanks = flushCards.map((c) => c.rank);
-		if (checkStraight(flushRanks)) {
-			isStraightFlush = true;
+		const sfHighCard = getStraightHighRank(flushRanks);
+		if (sfHighCard) {
+			return {
+				category: HandCategory.StraightFlush,
+				rankingValues: [sfHighCard],
+			};
 		}
 	}
 
-	// 3. Check Counts (Quads, Trips, Pairs)
-	let pairCount = 0;
-	let threeOfAKindCount = 0;
-	let fourOfAKindCount = 0;
-
-	for (const count of rankCounts.values()) {
-		if (count === 4) fourOfAKindCount++;
-		if (count === 3) threeOfAKindCount++;
-		if (count === 2) pairCount++;
+	// 2. Four of a Kind [cite: 17, 18]
+	if (quads.length > 0) {
+		const quadRank = quads[0];
+		const kicker = [...trips, ...pairs, ...singles].sort((a, b) => b - a)[0];
+		return {
+			category: HandCategory.FourOfAKind,
+			rankingValues: [quadRank, kicker],
+		};
 	}
 
-	// ----------------------------------------------------
-	// Decision Tree
-	// ----------------------------------------------------
+	// 3. Full House [cite: 19]
+	if ((trips.length >= 1 && pairs.length >= 1) || trips.length >= 2) {
+		const tripRank = trips[0];
+		const pairRank = trips.length > 1 ? trips[1] : pairs[0];
+		return {
+			category: HandCategory.FullHouse,
+			rankingValues: [tripRank, pairRank],
+		};
+	}
 
-	if (isStraightFlush)
-		return { category: HandCategory.StraightFlush, rankingValues: [] };
-	if (fourOfAKindCount > 0)
-		return { category: HandCategory.FourOfAKind, rankingValues: [] };
-	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1))
-		return { category: HandCategory.FullHouse, rankingValues: [] };
-	if (isFlush) return { category: HandCategory.Flush, rankingValues: [] };
-	if (isStraight) return { category: HandCategory.Straight, rankingValues: [] };
-	if (threeOfAKindCount > 0)
-		return { category: HandCategory.ThreeOfAKind, rankingValues: [] };
-	if (pairCount >= 2)
-		return { category: HandCategory.TwoPair, rankingValues: [] };
-	if (pairCount === 1)
-		return { category: HandCategory.OnePair, rankingValues: [] };
+	// 4. Flush [cite: 20]
+	if (flushSuit) {
+		const sortedFlushRanks = allCards
+			.filter((c) => c.suit === flushSuit)
+			.map((c) => c.rank)
+			.sort((a, b) => b - a)
+			.slice(0, 5);
+		return { category: HandCategory.Flush, rankingValues: sortedFlushRanks };
+	}
 
-	return { category: HandCategory.HighCard, rankingValues: [] };
+	// 5. Straight [cite: 16]
+	if (straightHighCard) {
+		return {
+			category: HandCategory.Straight,
+			rankingValues: [straightHighCard],
+		};
+	}
+
+	// 6. Three of a Kind [cite: 21]
+	if (trips.length > 0) {
+		const tripRank = trips[0];
+		const kickers = [...pairs, ...singles].sort((a, b) => b - a).slice(0, 2);
+		return {
+			category: HandCategory.ThreeOfAKind,
+			rankingValues: [tripRank, ...kickers],
+		};
+	}
+
+	// 7. Two Pair
+	if (pairs.length >= 2) {
+		const highPair = pairs[0];
+		const lowPair = pairs[1];
+		const kicker = [...trips, ...pairs.slice(2), ...singles].sort(
+			(a, b) => b - a,
+		)[0];
+		return {
+			category: HandCategory.TwoPair,
+			rankingValues: [highPair, lowPair, kicker],
+		};
+	}
+
+	// 8. One Pair [cite: 24]
+	if (pairs.length === 1) {
+		const pairRank = pairs[0];
+		const kickers = [...trips, ...singles].sort((a, b) => b - a).slice(0, 3);
+		return {
+			category: HandCategory.OnePair,
+			rankingValues: [pairRank, ...kickers],
+		};
+	}
+
+	// 9. High Card [cite: 25]
+	const highCardKickers = Array.from(rankCounts.keys())
+		.sort((a, b) => b - a)
+		.slice(0, 5);
+
+	return {
+		category: HandCategory.HighCard,
+		rankingValues: highCardKickers,
+	};
 }

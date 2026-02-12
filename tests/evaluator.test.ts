@@ -184,4 +184,28 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.StraightFlush);
 	});
+	it("should provide correct rankingValues for One Pair (for tie-breaking)", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Ace, suit: Suit.Clubs },
+			{ rank: Rank.Eight, suit: Suit.Diamonds },
+		];
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Ace, suit: Suit.Hearts }, // Pair of Aces
+			{ rank: Rank.King, suit: Suit.Spades },
+			{ rank: Rank.Queen, suit: Suit.Clubs },
+			{ rank: Rank.Five, suit: Suit.Diamonds },
+			{ rank: Rank.Two, suit: Suit.Hearts },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		// Order: [Pair Rank, Kicker 1, Kicker 2, Kicker 3]
+		// The 8 in the hole is better than the 5 or 2 on the board.
+		expect(result.rankingValues).toEqual([
+			Rank.Ace,
+			Rank.King,
+			Rank.Queen,
+			Rank.Eight,
+		]);
+	});
 });
