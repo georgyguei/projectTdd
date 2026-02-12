@@ -25,21 +25,3 @@ A robust poker hand evaluator and winner resolver built using Test-Driven Develo
 ```bash
 pnpm test
 ```
-
----
-
-### 3. Final TDD Polish 🥊
-
-Before you push the final tag, let's verify your `types.ts` is fully updated to support the multi-player resolution we added.
-
-**Verification Check:**
-
-- Your `HandResult` interface includes `category`, `rankingValues`, and `chosen5`.
-- Your `PlayerResult` interface includes `id` and `hand`[cite: 47].
-- The `resolveWinners` function returns an array of `PlayerResult` to handle split pots[cite: 12, 16].
-
-### Final Action: Tagging for Submission
-
-The best way to submit a TDD project is to tag the final state.
-**Action:** `git tag -a v1.0 -m "Final submission - All requirements met"`
-**Action:** `git push origin main --tags`
