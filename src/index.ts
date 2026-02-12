@@ -12,6 +12,7 @@ export function evaluateHand(
 ): HandResult {
 	const allCards = [...communityCards, ...holeCards];
 
+	// Strategy 1 & 2: Frequency Maps
 	const rankCounts = new Map<Rank, number>();
 	const suitCounts = new Map<Suit, number>();
 
@@ -20,41 +21,62 @@ export function evaluateHand(
 		suitCounts.set(card.suit, (suitCounts.get(card.suit) || 0) + 1);
 	}
 
-	// Strategy 3: Check for Straight
-	// Get all unique ranks, sort them ascending
-	// Note: Rank is a number enum, so this array is number[]
-	let uniqueRanks = Array.from(rankCounts.keys()).sort((a, b) => a - b);
+	// ----------------------------------------------------
+	// Helper: Straight Detector
+	// ----------------------------------------------------
+	const checkStraight = (ranks: Rank[]): boolean => {
+		let uniqueRanks = Array.from(new Set(ranks)).sort((a, b) => a - b);
 
-	// FIX: Handle Ace Low (Wheel)
-	// If we have an Ace (14), we also technically have a "1" for straight purposes.
-	if (uniqueRanks.includes(Rank.Ace)) {
-		// Prepend 1 to the start of the array
-		uniqueRanks = [1 as Rank, ...uniqueRanks];
-	}
+		// Handle Ace Low (Wheel)
+		if (uniqueRanks.includes(Rank.Ace)) {
+			uniqueRanks = [1 as Rank, ...uniqueRanks];
+		}
 
-	let isStraight = false;
-	let consecutiveCount = 1;
-
-	for (let i = 0; i < uniqueRanks.length - 1; i++) {
-		// Check if the next rank is exactly 1 higher than current
-		if (uniqueRanks[i + 1] === uniqueRanks[i] + 1) {
-			consecutiveCount++;
-			if (consecutiveCount >= 5) {
-				isStraight = true;
-				// We don't break here because we might find a higher straight later
+		let consecutiveCount = 1;
+		for (let i = 0; i < uniqueRanks.length - 1; i++) {
+			if (uniqueRanks[i + 1] === uniqueRanks[i] + 1) {
+				consecutiveCount++;
+				if (consecutiveCount >= 5) return true;
+			} else {
+				consecutiveCount = 1;
 			}
-		} else {
-			consecutiveCount = 1;
+		}
+		return false;
+	};
+
+	// ----------------------------------------------------
+	// Analysis
+	// ----------------------------------------------------
+
+	// 1. Check for basic Straight
+	const allRanks = allCards.map((c) => c.rank);
+	const isStraight = checkStraight(allRanks);
+
+	// 2. Check for Flush & Straight Flush
+	let isFlush = false;
+	let isStraightFlush = false;
+	let flushSuit: Suit | null = null;
+
+	for (const [suit, count] of suitCounts.entries()) {
+		if (count >= 5) {
+			isFlush = true;
+			flushSuit = suit;
+			break;
 		}
 	}
 
-	// ----------------------------------------------------
-	// Analysis & Decision
-	// ----------------------------------------------------
+	if (isFlush && flushSuit) {
+		const flushCards = allCards.filter((c) => c.suit === flushSuit);
+		const flushRanks = flushCards.map((c) => c.rank);
+		if (checkStraight(flushRanks)) {
+			isStraightFlush = true;
+		}
+	}
+
+	// 3. Check Counts (Quads, Trips, Pairs)
 	let pairCount = 0;
 	let threeOfAKindCount = 0;
 	let fourOfAKindCount = 0;
-	let isFlush = false;
 
 	for (const count of rankCounts.values()) {
 		if (count === 4) fourOfAKindCount++;
@@ -62,17 +84,16 @@ export function evaluateHand(
 		if (count === 2) pairCount++;
 	}
 
-	for (const count of suitCounts.values()) {
-		if (count >= 5) isFlush = true;
-	}
-
+	// ----------------------------------------------------
 	// Decision Tree
+	// ----------------------------------------------------
 
+	if (isStraightFlush) return { category: HandCategory.StraightFlush };
 	if (fourOfAKindCount > 0) return { category: HandCategory.FourOfAKind };
 	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1))
 		return { category: HandCategory.FullHouse };
 	if (isFlush) return { category: HandCategory.Flush };
-	if (isStraight) return { category: HandCategory.Straight }; // Correctly identifies Wheel now
+	if (isStraight) return { category: HandCategory.Straight };
 	if (threeOfAKindCount > 0) return { category: HandCategory.ThreeOfAKind };
 	if (pairCount >= 2) return { category: HandCategory.TwoPair };
 	if (pairCount === 1) return { category: HandCategory.OnePair };

@@ -166,4 +166,22 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.Straight);
 	});
+	it("should identify a Straight Flush hand", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Jack, suit: Suit.Spades },
+			{ rank: Rank.Ten, suit: Suit.Spades },
+		];
+
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Nine, suit: Suit.Spades },
+			{ rank: Rank.Eight, suit: Suit.Spades },
+			{ rank: Rank.Seven, suit: Suit.Spades }, // 7-8-9-10-J Spades
+			{ rank: Rank.Ace, suit: Suit.Diamonds },
+			{ rank: Rank.King, suit: Suit.Clubs },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.category).toBe(HandCategory.StraightFlush);
+	});
 });
