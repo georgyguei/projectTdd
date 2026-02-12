@@ -105,7 +105,7 @@ export function evaluateHand(
 				];
 				return {
 					high: uniqueRanks[i],
-					cards: ranks.map((r) => cards.find((c) => c.rank === r)!),
+					cards: ranks.map((r) => cards.find((c) => c.rank === r) as Card),
 				};
 			}
 		}
@@ -113,7 +113,7 @@ export function evaluateHand(
 		if (wheel.every((r) => cards.some((c) => c.rank === r))) {
 			return {
 				high: Rank.Five,
-				cards: wheel.map((r) => cards.find((c) => c.rank === r)!),
+				cards: wheel.map((r) => cards.find((c) => c.rank === r) as Card),
 			};
 		}
 		return null;
