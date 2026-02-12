@@ -94,4 +94,22 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.FullHouse);
 	});
+	it("should identify a Four of a Kind hand", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Ace, suit: Suit.Clubs },
+			{ rank: Rank.Ace, suit: Suit.Diamonds },
+		];
+
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Ace, suit: Suit.Hearts },
+			{ rank: Rank.Ace, suit: Suit.Spades }, // 4 Aces
+			{ rank: Rank.King, suit: Suit.Clubs },
+			{ rank: Rank.Two, suit: Suit.Diamonds },
+			{ rank: Rank.Four, suit: Suit.Hearts },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.category).toBe(HandCategory.FourOfAKind);
+	});
 });

@@ -13,31 +13,35 @@ export function evaluateHand(
 
 	let pairCount = 0;
 	let threeOfAKindCount = 0;
-	// We will add fourOfAKindCount in the next step
+	let fourOfAKindCount = 0; // New tracker
 
 	for (const count of rankCounts.values()) {
+		if (count === 4) fourOfAKindCount++;
 		if (count === 3) threeOfAKindCount++;
 		if (count === 2) pairCount++;
 	}
 
-	// 1. Full House Check (Must be before Three of a Kind)
-	// Logic: A set of 3 AND a set of 2.
-	// Edge case: Two sets of 3 (AAA KKK Q) is also a Full House (AAA KK).
+	// 1. Four of a Kind (Highest Priority)
+	if (fourOfAKindCount > 0) {
+		return { category: HandCategory.FourOfAKind };
+	}
+
+	// 2. Full House
 	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1)) {
 		return { category: HandCategory.FullHouse };
 	}
 
-	// 2. Three of a Kind
+	// 3. Three of a Kind
 	if (threeOfAKindCount > 0) {
 		return { category: HandCategory.ThreeOfAKind };
 	}
 
-	// 3. Two Pair
+	// 4. Two Pair
 	if (pairCount >= 2) {
 		return { category: HandCategory.TwoPair };
 	}
 
-	// 4. One Pair
+	// 5. One Pair
 	if (pairCount === 1) {
 		return { category: HandCategory.OnePair };
 	}
