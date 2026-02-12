@@ -76,4 +76,22 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.ThreeOfAKind);
 	});
+	it("should identify a Full House hand", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.King, suit: Suit.Clubs },
+			{ rank: Rank.King, suit: Suit.Diamonds },
+		];
+
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.King, suit: Suit.Hearts }, // Trip Kings
+			{ rank: Rank.Two, suit: Suit.Spades },
+			{ rank: Rank.Two, suit: Suit.Clubs }, // Pair of Twos
+			{ rank: Rank.Seven, suit: Suit.Diamonds },
+			{ rank: Rank.Nine, suit: Suit.Hearts },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.category).toBe(HandCategory.FullHouse);
+	});
 });
