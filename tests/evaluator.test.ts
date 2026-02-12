@@ -208,4 +208,27 @@ describe("Texas Holdem Evaluator", () => {
 			Rank.Eight,
 		]);
 	});
+	it("should return exactly 5 cards ordered by importance for Two Pair", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Jack, suit: Suit.Clubs },
+			{ rank: Rank.Ten, suit: Suit.Diamonds },
+		];
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Jack, suit: Suit.Hearts },
+			{ rank: Rank.Ten, suit: Suit.Spades },
+			{ rank: Rank.Ace, suit: Suit.Clubs }, // The Kicker
+			{ rank: Rank.Five, suit: Suit.Diamonds },
+			{ rank: Rank.Two, suit: Suit.Hearts },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.chosen5).toHaveLength(5);
+		// Order: Higher pair, lower pair, kicker [cite: 23, 29]
+		expect(result.chosen5[0].rank).toBe(Rank.Jack);
+		expect(result.chosen5[1].rank).toBe(Rank.Jack);
+		expect(result.chosen5[2].rank).toBe(Rank.Ten);
+		expect(result.chosen5[3].rank).toBe(Rank.Ten);
+		expect(result.chosen5[4].rank).toBe(Rank.Ace);
+	});
 });

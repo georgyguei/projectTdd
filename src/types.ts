@@ -38,7 +38,19 @@ export interface Card {
 	suit: Suit;
 }
 
+// src/types.ts
 export interface HandResult {
 	category: HandCategory;
 	rankingValues: Rank[];
+	chosen5: Card[]; // Exactly 5 distinct cards
+}
+
+export interface Player {
+	id: string;
+	hole: Card[];
+}
+
+export interface PlayerResult {
+	id: string;
+	hand: HandResult;
 }
