@@ -6,6 +6,31 @@ import {
 	type Suit,
 } from "./types";
 
+// Numeric weights for category comparison (Higher is better)
+const CATEGORY_RANKINGS: Record<HandCategory, number> = {
+	[HandCategory.StraightFlush]: 9,
+	[HandCategory.FourOfAKind]: 8,
+	[HandCategory.FullHouse]: 7,
+	[HandCategory.Flush]: 6,
+	[HandCategory.Straight]: 5,
+	[HandCategory.ThreeOfAKind]: 4,
+	[HandCategory.TwoPair]: 3,
+	[HandCategory.OnePair]: 2,
+	[HandCategory.HighCard]: 1,
+};
+
+export function compareHands(hand1: HandResult, hand2: HandResult): number {
+	const rank1 = CATEGORY_RANKINGS[hand1.category];
+	const rank2 = CATEGORY_RANKINGS[hand2.category];
+
+	if (rank1 > rank2) return 1;
+	if (rank1 < rank2) return -1;
+
+	// For now, if categories are equal, return 0 (Tie).
+	// We will implement tie-breakers (kickers) in the next step.
+	return 0;
+}
+
 export function evaluateHand(
 	communityCards: Card[],
 	holeCards: Card[],
