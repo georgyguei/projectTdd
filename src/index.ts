@@ -2,7 +2,7 @@ import {
 	type Card,
 	HandCategory,
 	type HandResult,
-	type Rank,
+	Rank,
 	type Suit,
 } from "./types";
 
@@ -15,7 +15,6 @@ export function evaluateHand(
 	const rankCounts = new Map<Rank, number>();
 	const suitCounts = new Map<Suit, number>();
 
-	// Strategy 1 & 2: Frequency Maps
 	for (const card of allCards) {
 		rankCounts.set(card.rank, (rankCounts.get(card.rank) || 0) + 1);
 		suitCounts.set(card.suit, (suitCounts.get(card.suit) || 0) + 1);
@@ -23,16 +22,26 @@ export function evaluateHand(
 
 	// Strategy 3: Check for Straight
 	// Get all unique ranks, sort them ascending
-	const uniqueRanks = Array.from(rankCounts.keys()).sort((a, b) => a - b);
-	let isStraight = false;
+	// Note: Rank is a number enum, so this array is number[]
+	let uniqueRanks = Array.from(rankCounts.keys()).sort((a, b) => a - b);
 
-	// Check for 5 consecutive ranks
+	// FIX: Handle Ace Low (Wheel)
+	// If we have an Ace (14), we also technically have a "1" for straight purposes.
+	if (uniqueRanks.includes(Rank.Ace)) {
+		// Prepend 1 to the start of the array
+		uniqueRanks = [1 as Rank, ...uniqueRanks];
+	}
+
+	let isStraight = false;
 	let consecutiveCount = 1;
+
 	for (let i = 0; i < uniqueRanks.length - 1; i++) {
+		// Check if the next rank is exactly 1 higher than current
 		if (uniqueRanks[i + 1] === uniqueRanks[i] + 1) {
 			consecutiveCount++;
 			if (consecutiveCount >= 5) {
 				isStraight = true;
+				// We don't break here because we might find a higher straight later
 			}
 		} else {
 			consecutiveCount = 1;
@@ -57,19 +66,13 @@ export function evaluateHand(
 		if (count >= 5) isFlush = true;
 	}
 
-	// Decision Tree (Highest to Lowest)
-
-	// 1. Straight Flush (Wait! We haven't tested this yet, but it beats Quads)
-	// We will implement Straight Flush logic in the next step.
+	// Decision Tree
 
 	if (fourOfAKindCount > 0) return { category: HandCategory.FourOfAKind };
 	if (threeOfAKindCount >= 2 || (threeOfAKindCount === 1 && pairCount >= 1))
 		return { category: HandCategory.FullHouse };
 	if (isFlush) return { category: HandCategory.Flush };
-
-	// 4. Straight (Beats Three of a Kind)
-	if (isStraight) return { category: HandCategory.Straight };
-
+	if (isStraight) return { category: HandCategory.Straight }; // Correctly identifies Wheel now
 	if (threeOfAKindCount > 0) return { category: HandCategory.ThreeOfAKind };
 	if (pairCount >= 2) return { category: HandCategory.TwoPair };
 	if (pairCount === 1) return { category: HandCategory.OnePair };

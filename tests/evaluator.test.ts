@@ -148,4 +148,22 @@ describe("Texas Holdem Evaluator", () => {
 
 		expect(result.category).toBe(HandCategory.Straight);
 	});
+	it("should identify a Wheel Straight (Ace low)", () => {
+		const holeCards: [Card, Card] = [
+			{ rank: Rank.Ace, suit: Suit.Clubs },
+			{ rank: Rank.Two, suit: Suit.Diamonds },
+		];
+
+		const communityCards: [Card, Card, Card, Card, Card] = [
+			{ rank: Rank.Three, suit: Suit.Hearts },
+			{ rank: Rank.Four, suit: Suit.Spades },
+			{ rank: Rank.Five, suit: Suit.Clubs }, // A-2-3-4-5
+			{ rank: Rank.Nine, suit: Suit.Diamonds },
+			{ rank: Rank.Jack, suit: Suit.Hearts },
+		];
+
+		const result = evaluateHand(communityCards, holeCards);
+
+		expect(result.category).toBe(HandCategory.Straight);
+	});
 });
