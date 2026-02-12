@@ -28,9 +28,7 @@ pnpm test
 
 ---
 
----
-
-### Step 32: 3. Final TDD Polish 🥊
+### 3. Final TDD Polish 🥊
 
 Before you push the final tag, let's verify your `types.ts` is fully updated to support the multi-player resolution we added.
 
@@ -45,11 +43,3 @@ Before you push the final tag, let's verify your `types.ts` is fully updated to 
 The best way to submit a TDD project is to tag the final state.
 **Action:** `git tag -a v1.0 -m "Final submission - All requirements met"`
 **Action:** `git push origin main --tags`
-
----
-
-### Sparring Conclusion
-
-We’ve built a complete, type-safe poker engine from scratch using a strict Red-Green-Refactor cycle. You’ve handled the Ace-low straight edge case [cite: 30], the 6-card flush selection [cite: 38], and the logic for playing the board[cite: 52].
-
-**Would you like me to do a final "dry run" scan of your `index.ts` one last time to look for any unused variables or Biome/Linting warnings before you send that private message to the instructor?**
